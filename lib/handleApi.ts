@@ -24,16 +24,17 @@ export const handleAPI = withApiAuthRequired(async function handleAPI(
 
 const getPathAndBody = async (req: NextRequest) => {
   const path = req.nextUrl.pathname.replace("/api/backend/", "");
-  console.log(path)
+  console.log("path: " + path)
   const body = req.body ? JSON.stringify(await req.json()) : undefined;
   const method = req.method;
   return { path, body, method };
 };
 
 const handleResponse = async (res: Response) => {
+  const text = await res.text()
   if (res.status > 199 && res.status < 300) {
-    if (res.body) {
-      return NextResponse.json(await res.json());
+    if (isJson(text)) {
+      return NextResponse.json(JSON.parse(text));
     } else {
       return new NextResponse(res.statusText, { status: res.status });
     }
@@ -41,3 +42,12 @@ const handleResponse = async (res: Response) => {
     return new NextResponse(res.statusText, { status: res.status });
   }
 };
+
+const isJson = (str: string) => {
+  try {
+    JSON.parse(str);
+  } catch (e) {
+    return false;
+  }
+  return true;
+}
