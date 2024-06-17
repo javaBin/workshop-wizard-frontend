@@ -1,12 +1,13 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import SearchBar from "@/components/SearchBar";
-import { Toast } from 'bootstrap';
+import { Toast } from "bootstrap";
 
 type Workshop = {
   id: number;
   title: string;
   description: string;
   speakers: Speaker[];
+  registered: boolean;
 };
 
 type Speaker = {
@@ -26,14 +27,30 @@ const Workshops = () => {
   const [registrationError, setRegistrationError] = useState<string | null>(null);
 
   useEffect(() => {
+    fetchWorkshops();
+  }, []);
+
+  const fetchWorkshops = () => {
+    console.log("Fetching workshops");
     fetch("/api/backend/workshop") // replace with your actual API endpoint
       .then((response) => response.json())
-      .then((data) => {
-        setWorkshops(data);
-        setFilteredWorkshops(data);
+      .then((workshopData) => {
+        console.log("Fetching workshop registrations");
+        fetch("/api/backend/workshop/registration") // replace with your actual API endpoint
+          .then((response) => response.json())
+          .then((registrations) => {
+            // update workhops with registration data
+            let map = workshopData.map((ws: Workshop) => {
+              ws.registered = registrations.find((registration: {
+                workshopId: number;
+              }) => registration.workshopId === ws.id);
+              return ws;
+            });
+            setWorkshops(map);
+            setFilteredWorkshops(map);
+          });
       });
-
-  }, []);
+  }
 
   useEffect(() => {
     setFilteredWorkshops(
@@ -42,6 +59,7 @@ const Workshops = () => {
       )
     );
   }, [searchTerm, workshops]);
+
 
   const onRegister = (workshop: Workshop) => {
     setSelectedWorkshop(workshop);
@@ -61,6 +79,7 @@ const Workshops = () => {
             console.log("Registered for workshop");
             const toastBootstrap = Toast.getOrCreateInstance(successToastRef.current!)
             toastBootstrap.show()
+            fetchWorkshops();
           } else {
             throw new Error("Error registering for workshop");
           }
@@ -94,7 +113,7 @@ const Workshops = () => {
                     <li key={speaker.name}>{speaker.name}</li>
                   ))}
                 </ul>
-                <button className="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modal"
+                <button className="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modal" disabled={workshop.registered}
                         onClick={() => onRegister(workshop)}>Register
                 </button>
               </div>

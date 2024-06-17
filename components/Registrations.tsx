@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import SearchBar from "@/components/SearchBar";
 
 type Registration = {
+  workshopId: number;
   state: string;
   workshopTitle: string;
   workshopStartTime: string;
